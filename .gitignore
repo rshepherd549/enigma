@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+.vs
+enigma/x64
+enigmaMain/x64
+enigmaTest/x64
+enigmaTestGoogle/x64
+packages
+x64
