@@ -155,6 +155,7 @@
     <ClInclude Include="enigma.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="enigma.cpp" />

@@ -33,15 +33,15 @@ namespace enigmaTest
         Assert::AreEqual(!test.expectedC, !tc);
 
         if (auto expectedC = test.expectedC; expectedC && tc)
-          Assert::AreEqual(*expectedC, tc->ToChar());
+          Assert::AreEqual(*expectedC, tc->Value());
       }
     }
 
     TEST_METHOD(TestTransformChar)
     {
       Machine m;
-      Assert::AreEqual('A', m.Press(*Key::Create('A')).ToChar());
-      Assert::AreEqual('B', m.Press(*Key::Create('B')).ToChar());
+      Assert::AreEqual('A', m.ToLamp(*Key::Create('A')).Value());
+      Assert::AreEqual('B', m.ToLamp(*Key::Create('B')).Value());
     }
   };
 }

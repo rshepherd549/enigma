@@ -25,18 +25,15 @@ TEST(TestTextChar, Create)
     EXPECT_EQ(!test.expectedC, !tc) << "(" << test.line << ") " << test.msg;
 
     if (auto expectedC = test.expectedC; expectedC && tc)
-      EXPECT_EQ(*expectedC, tc->ToChar()) << "(" << test.line << ") " << test.msg;
+      EXPECT_EQ(*expectedC, tc->Value()) << "(" << test.line << ") " << test.msg;
   }
 }
 
 TEST(TestMachine, Press)
 {
   Machine m;
-  EXPECT_EQ('A', m.Press(*Key::Create('A')).ToChar());
-  EXPECT_EQ('B', m.Press(*Key::Create('B')).ToChar());
+  auto key_a = *Key::Create('A');
+  EXPECT_EQ('Z', m.ToLamp(key_a).Value());
+  EXPECT_EQ('Z', m.ToLamp(key_a).Value());
 }
 
-TEST(TestCaseName, TestName) {
-  EXPECT_EQ(1, 1);
-  EXPECT_TRUE(false) << "spagetti";
-}

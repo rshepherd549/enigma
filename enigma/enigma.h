@@ -4,6 +4,8 @@
 #include <optional>
 #include <vector>
 
+#include "util.h"
+
 using FrequencyHertz = float;
 using Time = size_t;
 
@@ -28,15 +30,22 @@ struct Preamble
   IndicatorSetting indicatorSetting = {0,0,0}; //Used for encoding and decoding
 };
 
-class TextChar
+static constexpr size_t c_numChars = 26;
+
+using Terminal = IntRange<unsigned char, 0, c_numChars>;
+
+struct LeftTerminal
 {
-  char c_;
-  TextChar(char c);
-public:
-  static std::optional<TextChar> Create(char c); //Allow A-Z
-  char ToChar() const;
+  Terminal terminal;
+};
+bool operator==(const LeftTerminal& left1, const LeftTerminal& left2);
+
+struct RightTerminal
+{
+  Terminal terminal;
 };
 
+using TextChar = IntRange<char, 'A', c_numChars>;
 using Key = TextChar;
 using Lamp = TextChar;
 using EncipheredText = std::vector<TextChar>;
@@ -48,18 +57,79 @@ struct EnigmaMessage
   EncipheredText encipheredText;
 };
 
-class ScramblerUnit
+class Connections
 {
+protected:
+  std::array<LeftTerminal, c_numChars> rightToLeft_;
+  Connections(std::array<LeftTerminal, c_numChars> rightToLeft);
+public:
+  static std::optional<Connections> Create(std::array<LeftTerminal, c_numChars> rightToLeft);
+  static Connections CreateIdentity();
+
+  LeftTerminal ToLeft(RightTerminal right) const;
+  RightTerminal ToRight(LeftTerminal left) const;
+};
+
+class CrossConnections: public Connections
+{
+  CrossConnections(std::array<LeftTerminal, c_numChars> connections);
+public:
+  static std::optional<CrossConnections> Create(std::array<LeftTerminal, c_numChars> connections);
+  static CrossConnections CreateReverse();
+
+  LeftTerminal TurnAround(LeftTerminal left) const;
+};
+
+class Wheel
+{
+  const Connections& connections_;
+  Key ringSetting_;
+  size_t rotation_{0};
+
+  size_t TotalRotation_() const;
+  RightTerminal RotateRight_(RightTerminal right) const;
+  RightTerminal UnRotateRight_(RightTerminal right) const;
+public:
+  Wheel(const Connections& connections, Key ringSetting);
+  LeftTerminal ToLeft(RightTerminal right) const;
+  RightTerminal ToRight(LeftTerminal left) const;
+};
+
+class TurnAboutWheel
+{
+  CrossConnections crossConnections_;
+public:
+  TurnAboutWheel(CrossConnections crossConnections);
+  LeftTerminal TurnAround(LeftTerminal in) const;
+};
+
+class Commutator
+{
+public:
+  LeftTerminal ToTerminal(Key key) const;
+  Lamp ToLamp(LeftTerminal left) const;
+};
+
+class Scrambler
+{
+  TurnAboutWheel turnAroundWheel_;
+  std::array<Wheel,3> wheels_; //left to right
+  Commutator commutator_;
+public:
+  Scrambler(CrossConnections crossConnections,
+            std::array<std::reference_wrapper<const Connections>,3> connectionss);
+  Lamp ToLamp(Key in) const;
 };
 class SteckerBoard
 {
 };
 class Machine
 {
-  ScramblerUnit scramblerUnit_;
+  std::array<Connections,5> connectionss_;
+  Scrambler scrambler_;
   SteckerBoard steckerBoard_;
 
 public:
-  Lamp Press(Key key) const;
+  Machine();
+  Lamp ToLamp(Key key) const;
 };
-
