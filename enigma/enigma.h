@@ -37,12 +37,14 @@ using Terminal = IntRange<unsigned char, 0, c_numChars>;
 struct LeftTerminal
 {
   Terminal terminal;
+  LeftTerminal Inc(int inc) const;
 };
 bool operator==(const LeftTerminal& left1, const LeftTerminal& left2);
 
 struct RightTerminal
 {
   Terminal terminal;
+  RightTerminal Inc(int inc) const;
 };
 
 using TextChar = IntRange<char, 'A', c_numChars>;
@@ -87,12 +89,11 @@ class Wheel
   size_t rotation_{0};
 
   size_t TotalRotation_() const;
-  RightTerminal RotateRight_(RightTerminal right) const;
-  RightTerminal UnRotateRight_(RightTerminal right) const;
 public:
   Wheel(const Connections& connections, Key ringSetting);
   LeftTerminal ToLeft(RightTerminal right) const;
   RightTerminal ToRight(LeftTerminal left) const;
+  size_t Inc(size_t inc);
 };
 
 class TurnAboutWheel
@@ -110,26 +111,42 @@ public:
   Lamp ToLamp(LeftTerminal left) const;
 };
 
+constexpr size_t numScramblerWheels = 3;
 class Scrambler
 {
   TurnAboutWheel turnAroundWheel_;
-  std::array<Wheel,3> wheels_; //left to right
+  std::array<Wheel,numScramblerWheels> wheels_; //left to right
   Commutator commutator_;
 public:
   Scrambler(CrossConnections crossConnections,
-            std::array<std::reference_wrapper<const Connections>,3> connectionss);
-  Lamp ToLamp(Key in) const;
+            std::array<Wheel,numScramblerWheels> wheels);
+  Lamp ToLamp(Key in);
+};
+
+constexpr size_t numMachineWheels = 5;
+using WheelIndex = IntRange<unsigned char, 0, numMachineWheels>;
+struct WheelDescriptor
+{
+  WheelIndex wheelIndex;
+  Key ringSetting;
+  WheelDescriptor(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
+                  Key ringSetting);
 };
 class SteckerBoard
 {
 };
 class Machine
 {
-  std::array<Connections,5> connectionss_;
+  std::array<Connections,numMachineWheels> connectionss_;
   Scrambler scrambler_;
   SteckerBoard steckerBoard_;
 
 public:
-  Machine();
-  Lamp ToLamp(Key key) const;
+  Machine
+  (
+    std::array<Connections,numMachineWheels> connectionss,
+    CrossConnections crossConnections,
+    std::array<WheelDescriptor,numScramblerWheels> wheels
+  );
+  Lamp ToLamp(Key key);
 };

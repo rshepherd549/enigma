@@ -37,9 +37,20 @@ namespace enigmaTest
       }
     }
 
-    TEST_METHOD(TestTransformChar)
+    TEST_METHOD(TestIdentityWheels)
     {
-      Machine m;
+      Machine m
+      {
+        { Connections::CreateIdentity(),
+          Connections::CreateIdentity(),
+          Connections::CreateIdentity(),
+          Connections::CreateIdentity(),
+          Connections::CreateIdentity()},
+        CrossConnections::CreateReverse(),
+        { WheelDescriptor{*WheelIndex::Create(0), *Key::Create('A')},
+          WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
+          WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}}
+      };
       Assert::AreEqual('A', m.ToLamp(*Key::Create('A')).Value());
       Assert::AreEqual('B', m.ToLamp(*Key::Create('B')).Value());
     }

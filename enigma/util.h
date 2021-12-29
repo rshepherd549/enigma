@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 
 template <typename T, T begin_, size_t num_>
@@ -38,6 +39,11 @@ public:
   {
     return Value() == other.Value();
   }
+  IntRange Inc(int inc) const
+  {
+    return static_cast<T>((value_ + inc + num_) % num_);
+  };
+
 };
 
 template <typename TItr, typename TPred>
@@ -67,4 +73,21 @@ bool all_unique(TItr begin, TItr end)
          {
            return std::find(begin, curr, *curr) != curr;
          });
+}
+
+template <typename TItr, typename TPred>
+TItr for_while(TItr itr, TItr end, TPred pred) //expect TPred::operator(*itr)
+{
+  while (itr != end && pred(*itr))
+    ++itr;
+
+  return itr;
+}
+
+template <typename T, size_t num, typename TFnc>
+auto to_array(const std::array<T,num>& arrIn, const TFnc fnc) -> std::array<decltype(fnc(arrIn.front())), num>
+{
+  std::array<decltype(fnc(arrIn.front())), num> arrOut;
+  std::transform(arrIn.cbegin(), arrIn.cend(), arrOut.begin(), fnc);
+  return arrOut;
 }

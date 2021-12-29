@@ -29,9 +29,20 @@ TEST(TestTextChar, Create)
   }
 }
 
-TEST(TestMachine, Press)
+TEST(TestMachine, IdentityWheels)
 {
-  Machine m;
+  Machine m
+  {
+    { Connections::CreateIdentity(),
+      Connections::CreateIdentity(),
+      Connections::CreateIdentity(),
+      Connections::CreateIdentity(),
+      Connections::CreateIdentity()},
+    CrossConnections::CreateReverse(),
+    { WheelDescriptor{*WheelIndex::Create(0), *Key::Create('A')},
+      WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
+      WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}}
+  };
   auto key_a = *Key::Create('A');
   EXPECT_EQ('Z', m.ToLamp(key_a).Value());
   EXPECT_EQ('Z', m.ToLamp(key_a).Value());

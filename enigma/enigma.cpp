@@ -8,6 +8,16 @@ bool operator==(const LeftTerminal& left1, const LeftTerminal& left2)
 {
   return left1.terminal == left2.terminal;
 }
+LeftTerminal LeftTerminal::Inc(int inc) const
+{
+  terminal.Inc(inc);
+  return *this;
+};
+RightTerminal RightTerminal::Inc(int inc) const
+{
+  terminal.Inc(inc);
+  return *this;
+};
 
 Connections::Connections(std::array<LeftTerminal, c_numChars> rightToLeft):
   rightToLeft_{std::move(rightToLeft)}
@@ -90,27 +100,28 @@ size_t Wheel::TotalRotation_() const
   return (ringSetting_.Value() - 'A') + rotation_;
 }
 
-RightTerminal Wheel::RotateRight_(RightTerminal right) const
-{
-  return RightTerminal{*Terminal::Create( ( right.terminal.Value()
-                                          + TotalRotation_())
-                                        % c_numChars)};
-}
-RightTerminal Wheel::UnRotateRight_(RightTerminal right) const
-{
-  return RightTerminal{*Terminal::Create( ( right.terminal.Value()
-                                          - TotalRotation_())
-                                        % c_numChars)};
-}
-
 LeftTerminal Wheel::ToLeft(RightTerminal right) const
 {
-  return connections_.ToLeft(RotateRight_(right));
+  const auto wheelRotation = static_cast<int>(TotalRotation_());
+  const auto effective_right = right.Inc(wheelRotation);
+  const auto effective_left = connections_.ToLeft(effective_right);
+  const auto left = effective_left.Inc(-wheelRotation);
+  return left;
 }
 
 RightTerminal Wheel::ToRight(LeftTerminal left) const
 {
-  return UnRotateRight_(connections_.ToRight(left));
+  const auto wheelRotation = static_cast<int>(TotalRotation_());
+  const auto effective_left = left.Inc(-wheelRotation);
+  const auto effective_right = connections_.ToRight(effective_left);
+  const auto right = effective_right.Inc(wheelRotation);
+  return right;
+}
+
+size_t Wheel::Inc(size_t inc) //Returns the increment for the next wheel
+{
+  rotation_ = (rotation_ + inc) % c_numChars;
+  return rotation_ ? 0 : 1;
 }
 
 TurnAboutWheel::TurnAboutWheel(CrossConnections crossConnections):
@@ -134,21 +145,23 @@ Key Commutator::ToLamp(LeftTerminal left) const
 }
 
 Scrambler::Scrambler(CrossConnections crossConnections,
-                     std::array<std::reference_wrapper<const Connections>,3> connectionss):
+                     std::array<Wheel,numScramblerWheels> wheels):
   turnAroundWheel_{crossConnections},
-  wheels_({Wheel{connectionss[0].get(), *Key::Create('A')},
-           Wheel{connectionss[1].get(), *Key::Create('A')},
-           Wheel{connectionss[2].get(), *Key::Create('A')}})
+  wheels_{std::move(wheels)}
 {
 }
 
-Lamp Scrambler::ToLamp(Key in) const
+Lamp Scrambler::ToLamp(Key in)
 {
+  for_while(wheels_.rbegin(), wheels_.rend(), [](auto& wheel)
+  {
+    return wheel.Inc(1);
+  });
+
   auto terminal = commutator_.ToTerminal(in);
 
   terminal = std::accumulate(wheels_.crbegin(), wheels_.crend(),
-                             terminal,
-                             [](const auto leftTerminal, const auto& wheel)
+                             terminal, [](const auto leftTerminal, const auto& wheel)
   {
     return wheel.ToLeft(RightTerminal{leftTerminal.terminal});
   });
@@ -156,8 +169,7 @@ Lamp Scrambler::ToLamp(Key in) const
   terminal = turnAroundWheel_.TurnAround(terminal);
 
   terminal = std::accumulate(wheels_.cbegin(), wheels_.cend(),
-                             terminal,
-                             [](const auto leftTerminal, const auto& wheel)
+                             terminal, [](const auto leftTerminal, const auto& wheel)
   {
     return LeftTerminal{wheel.ToRight(leftTerminal).terminal};
   });
@@ -165,18 +177,25 @@ Lamp Scrambler::ToLamp(Key in) const
   return commutator_.ToLamp(terminal);
 }
 
-Machine::Machine():
-  connectionss_{{Connections::CreateIdentity(),
-                 Connections::CreateIdentity(),
-                 Connections::CreateIdentity(),
-                 Connections::CreateIdentity(),
-                 Connections::CreateIdentity()}},
-  scrambler_{CrossConnections::CreateReverse(),
-             {connectionss_[0],connectionss_[1],connectionss_[2]}}
+WheelDescriptor::WheelDescriptor(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
+                                 Key ringSetting):
+  wheelIndex{wheelIndex},
+  ringSetting{ringSetting}
 {
 }
 
-Lamp Machine::ToLamp(Key key) const
+Machine::Machine( std::array<Connections,numMachineWheels> connectionss,
+                  CrossConnections crossConnections,
+                  std::array<WheelDescriptor,numScramblerWheels> wheels)
+: connectionss_{std::move(connectionss)},
+  scrambler_{std::move(crossConnections),
+             {Wheel{connectionss_[wheels[0].wheelIndex.Value()], wheels[0].ringSetting},
+              Wheel{connectionss_[wheels[1].wheelIndex.Value()], wheels[1].ringSetting},
+              Wheel{connectionss_[wheels[2].wheelIndex.Value()], wheels[2].ringSetting}}}
+{
+}
+
+Lamp Machine::ToLamp(Key key)
 {
   return scrambler_.ToLamp(key);
 }
