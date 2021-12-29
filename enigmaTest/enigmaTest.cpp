@@ -51,8 +51,9 @@ namespace enigmaTest
           WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
           WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}}
       };
-      Assert::AreEqual('A', m.ToLamp(*Key::Create('A')).Value());
-      Assert::AreEqual('B', m.ToLamp(*Key::Create('B')).Value());
+      Assert::AreEqual('Z', m.ToLamp(*Key::Create('A')).Value());
+      Assert::AreEqual('Z', m.ToLamp(*Key::Create('A')).Value());
+      Assert::AreEqual('Y', m.ToLamp(*Key::Create('B')).Value());
     }
   };
 }

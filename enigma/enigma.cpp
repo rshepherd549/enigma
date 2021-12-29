@@ -31,6 +31,21 @@ Connections::Connections(std::array<LeftTerminal, c_numChars> rightToLeft):
        : std::optional<Connections>{};
 }
 
+/*static*/ std::optional<Connections> Connections::Create(std::array<unsigned char, c_numChars> rightToLeft_)
+{
+  std::array<LeftTerminal, c_numChars> rightToLeft;
+
+  for (size_t i = 0; i != c_numChars; ++i)
+  {
+    const auto terminal = Terminal::Create(rightToLeft_[i]);
+    if (!terminal)
+      return {};
+    rightToLeft[i] = LeftTerminal{*terminal};
+  }
+
+  return Create(rightToLeft);
+}
+
 /*static*/ Connections Connections::CreateIdentity()
 {
   std::array<LeftTerminal, c_numChars> rightToLeft;
@@ -200,3 +215,17 @@ Lamp Machine::ToLamp(Key key)
   return scrambler_.ToLamp(key);
 }
 
+std::string Machine::ToLamp(const std::string_view keys)
+{
+  std::string lamps;
+
+  for (const auto key_: keys)
+  {
+    const auto key = Key::Create(key_);
+    if (!key)
+      return {};
+    lamps += ToLamp(*key).Value();
+  }
+
+  return lamps;
+}

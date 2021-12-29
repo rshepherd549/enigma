@@ -2,6 +2,7 @@
 
 #include <array>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "util.h"
@@ -66,6 +67,7 @@ protected:
   Connections(std::array<LeftTerminal, c_numChars> rightToLeft);
 public:
   static std::optional<Connections> Create(std::array<LeftTerminal, c_numChars> rightToLeft);
+  static std::optional<Connections> Create(std::array<unsigned char, c_numChars> rightToLeft);
   static Connections CreateIdentity();
 
   LeftTerminal ToLeft(RightTerminal right) const;
@@ -149,4 +151,5 @@ public:
     std::array<WheelDescriptor,numScramblerWheels> wheels
   );
   Lamp ToLamp(Key key);
+  std::string ToLamp(const std::string_view keys);
 };
