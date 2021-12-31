@@ -199,20 +199,60 @@ WheelDescriptor::WheelDescriptor(IntRange<unsigned char, 0, numMachineWheels> wh
 {
 }
 
-Machine::Machine( std::array<Connections,numMachineWheels> connectionss,
-                  CrossConnections crossConnections,
-                  std::array<WheelDescriptor,numScramblerWheels> wheels)
+SteckerBoard::SteckerBoard(const CrossPluggings& crossPluggings)
+{
+  for (char i = 0; i != c_numChars; ++i)
+    crossPluggings_[i] = *Key::Create('A'+i);
+
+  for (const auto& crossPlugging: crossPluggings)
+  {
+    crossPluggings_[crossPlugging.lhs.Value()-'A'] = crossPlugging.rhs;
+    crossPluggings_[crossPlugging.rhs.Value()-'A'] = crossPlugging.lhs;
+  }
+}
+/*static*/ bool SteckerBoard::IsValid_(const CrossPluggings& crossPluggings)
+{
+  std::array<unsigned char, c_numChars> charsUsed{};
+
+  const auto anyDuplicate = std::any_of(crossPluggings.cbegin(), crossPluggings.cend(), [&charsUsed](const auto& crossPlugging)
+  {
+    return charsUsed[crossPlugging.lhs.Value()-'A']++
+        || charsUsed[crossPlugging.rhs.Value()-'A'];
+  });
+
+  return !anyDuplicate;
+}
+
+/*static*/ std::optional<SteckerBoard> SteckerBoard::Create(const CrossPluggings& crossPluggings)
+{
+  return IsValid_(crossPluggings)
+       ? SteckerBoard(crossPluggings)
+       : std::optional<SteckerBoard>{};
+}
+Key SteckerBoard::Cross(Key key) const
+{
+  return crossPluggings_[key.Value()-'A'];
+}
+
+Machine::Machine( CrossConnections crossConnections,
+                  std::array<Connections,numMachineWheels> connectionss,
+                  std::array<WheelDescriptor,numScramblerWheels> wheels,
+                  SteckerBoard steckerBoard)
 : connectionss_{std::move(connectionss)},
   scrambler_{std::move(crossConnections),
              {Wheel{connectionss_[wheels[0].wheelIndex.Value()], wheels[0].ringSetting},
               Wheel{connectionss_[wheels[1].wheelIndex.Value()], wheels[1].ringSetting},
-              Wheel{connectionss_[wheels[2].wheelIndex.Value()], wheels[2].ringSetting}}}
+              Wheel{connectionss_[wheels[2].wheelIndex.Value()], wheels[2].ringSetting}}},
+  steckerBoard_{std::move(steckerBoard)}
 {
 }
 
-Lamp Machine::ToLamp(Key key)
+Lamp Machine::ToLamp(const Key key_)
 {
-  return scrambler_.ToLamp(key);
+  const auto key = steckerBoard_.Cross(key_);
+  const auto lamp = scrambler_.ToLamp(key);
+
+  return steckerBoard_.Cross(lamp);
 }
 
 std::string Machine::ToLamp(const std::string_view keys)

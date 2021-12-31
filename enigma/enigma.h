@@ -134,8 +134,20 @@ struct WheelDescriptor
   WheelDescriptor(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
                   Key ringSetting);
 };
+struct CrossPlugging
+{
+  Key lhs;
+  Key rhs;
+};
+using CrossPluggings = std::vector<CrossPlugging>;
 class SteckerBoard
 {
+  std::array<Key, c_numChars> crossPluggings_;
+  SteckerBoard(const CrossPluggings& crossPluggings);
+  static bool IsValid_(const CrossPluggings& crossPluggings);
+public:
+  static std::optional<SteckerBoard> Create(const CrossPluggings& crossPluggings);
+  Key Cross(Key key) const;
 };
 class Machine
 {
@@ -144,12 +156,10 @@ class Machine
   SteckerBoard steckerBoard_;
 
 public:
-  Machine
-  (
-    std::array<Connections,numMachineWheels> connectionss,
-    CrossConnections crossConnections,
-    std::array<WheelDescriptor,numScramblerWheels> wheels
-  );
+  Machine(CrossConnections crossConnections,
+          std::array<Connections,numMachineWheels> connectionss,
+          std::array<WheelDescriptor,numScramblerWheels> wheels,
+          SteckerBoard steckerBoard);
   Lamp ToLamp(Key key);
   std::string ToLamp(const std::string_view keys);
 };

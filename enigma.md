@@ -47,4 +47,6 @@ auto to_array(const std::array<T,num>& arrIn, const TFnc fnc) -> std::array<decl
 
 Explicit types are a pain for test creation
 
+https://en.wikipedia.org/wiki/Enigma_machine
+
 
