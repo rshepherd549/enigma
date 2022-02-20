@@ -127,12 +127,12 @@ public:
 
 constexpr size_t numMachineWheels = 5;
 using WheelIndex = IntRange<unsigned char, 0, numMachineWheels>;
-struct WheelDescriptor
+struct WheelSelection
 {
   WheelIndex wheelIndex;
   Key ringSetting;
-  WheelDescriptor(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
-                  Key ringSetting);
+  WheelSelection(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
+                 Key ringSetting);
 };
 struct CrossPlugging
 {
@@ -158,7 +158,7 @@ class Machine
 public:
   Machine(CrossConnections crossConnections,
           std::array<Connections,numMachineWheels> connectionss,
-          std::array<WheelDescriptor,numScramblerWheels> wheels,
+          std::array<WheelSelection,numScramblerWheels> wheels,
           SteckerBoard steckerBoard);
   Lamp ToLamp(Key key);
   std::string ToLamp(const std::string_view keys);

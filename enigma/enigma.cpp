@@ -10,13 +10,11 @@ bool operator==(const LeftTerminal& left1, const LeftTerminal& left2)
 }
 LeftTerminal LeftTerminal::Inc(int inc) const
 {
-  terminal.Inc(inc);
-  return *this;
+  return LeftTerminal{terminal.Inc(inc)};
 };
 RightTerminal RightTerminal::Inc(int inc) const
 {
-  terminal.Inc(inc);
-  return *this;
+  return RightTerminal{terminal.Inc(inc)};
 };
 
 Connections::Connections(std::array<LeftTerminal, c_numChars> rightToLeft):
@@ -127,9 +125,9 @@ LeftTerminal Wheel::ToLeft(RightTerminal right) const
 RightTerminal Wheel::ToRight(LeftTerminal left) const
 {
   const auto wheelRotation = static_cast<int>(TotalRotation_());
-  const auto effective_left = left.Inc(-wheelRotation);
+  const auto effective_left = left.Inc(wheelRotation);
   const auto effective_right = connections_.ToRight(effective_left);
-  const auto right = effective_right.Inc(wheelRotation);
+  const auto right = effective_right.Inc(-wheelRotation);
   return right;
 }
 
@@ -192,7 +190,7 @@ Lamp Scrambler::ToLamp(Key in)
   return commutator_.ToLamp(terminal);
 }
 
-WheelDescriptor::WheelDescriptor(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
+WheelSelection::WheelSelection(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
                                  Key ringSetting):
   wheelIndex{wheelIndex},
   ringSetting{ringSetting}
@@ -236,7 +234,7 @@ Key SteckerBoard::Cross(Key key) const
 
 Machine::Machine( CrossConnections crossConnections,
                   std::array<Connections,numMachineWheels> connectionss,
-                  std::array<WheelDescriptor,numScramblerWheels> wheels,
+                  std::array<WheelSelection,numScramblerWheels> wheels,
                   SteckerBoard steckerBoard)
 : connectionss_{std::move(connectionss)},
   scrambler_{std::move(crossConnections),

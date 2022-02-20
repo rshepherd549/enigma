@@ -39,9 +39,9 @@ TEST(TestMachine, IdentityWheels)
       Connections::CreateIdentity(),
       Connections::CreateIdentity(),
       Connections::CreateIdentity()},
-    { WheelDescriptor{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}},
+    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
     *SteckerBoard::Create({})
   };
   auto m_ = m;
@@ -69,9 +69,9 @@ TEST(TestMachine, AddOneWheels)
       Connections::CreateIdentity(),
       Connections::CreateIdentity(),
       Connections::CreateIdentity()},
-    { WheelDescriptor{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}},
+    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
     *SteckerBoard::Create({})
   };
   auto m_ = m;
@@ -91,39 +91,50 @@ TEST(TestMachine, AddOneWheels)
 
 TEST(TestMachine, ChangingWheels)
 {
-  Machine m
-  {                                                            //                               1  1  1  1  1  1  1  1  1  1  2  2  2  2  2  2
-    CrossConnections::CreateReverse(),                         // 0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-    { *Connections::Create(std::array<unsigned char, c_numChars>{ 1, 3, 7,10,15,18,23, 0, 5,19,23, 2, 4,21, 8,10,12,20,22,24,14,25, 6,16,18, 0}),
+  Machine m0
+  {
+    CrossConnections::CreateReverse(),                         // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
+    { Connections::CreateIdentity(),
       Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
+      *Connections::Create(std::array<unsigned char, c_numChars>{ 0, 2, 1, 5, 3, 4, 9, 6, 7, 8,15,10,11,12,13,14,22,16,17,18,19,20,21,25,23,24}),
       Connections::CreateIdentity(),
       Connections::CreateIdentity()},
-    { WheelDescriptor{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}},
+    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
     *SteckerBoard::Create({})
   };
-  auto m_ = m;
+  auto m1 = m0;
+  auto m2 = m0;
+  auto m3 = m0;
 
-  //p      +p    -p                   -p      +p
-  //1: A->0->1->3->2->2->2->23->23->23->22->23->24->Y
-  EXPECT_EQ('Y', m.ToLamp(*Key::Create('A')).Value());
+  //p       +p      -p                      +p      -p
+  //1: A-> 0-> 1-> 2-> 1-> 1-> 1->24->24->24->25->23->22->W
+  EXPECT_EQ('W', m0.ToLamp(*Key::Create('A')).Value());
+  //1: W->22->23->25->24->24->24-> 1-> 1-> 1-> 2-> 1-> 0->A
+  EXPECT_EQ('A', m1.ToLamp(*Key::Create('W')).Value());
 
-  //2: A->0->2->5->3->3->3->22->22->22->20->22->24->Y
-  EXPECT_EQ('Y', m.ToLamp(*Key::Create('A')).Value());
+  //2: A-> 0-> 2-> 1->25->25->25-> 0-> 0-> 0-> 2-> 1->25->Z
+  EXPECT_EQ('Z', m0.ToLamp(*Key::Create('A')).Value());
 
-  //3: A->0->3->7->4->4->4->21->21->21->18->21->24->Y
-  EXPECT_EQ('Y', m.ToLamp(*Key::Create('A')).Value());
-  EXPECT_EQ('W', m.ToLamp(*Key::Create('B')).Value());
-  EXPECT_EQ("QTMMJBJGMU", m.ToLamp("HELLOWORLD"));
-  EXPECT_EQ("QTMMJBJGMU", m.ToLamp("HELLOWORLD"));
-  EXPECT_EQ("HELLOWORLD", m.ToLamp("QTMMJBJGMU"));
+  //3: A-> 0-> 3-> 5-> 2-> 2-> 2->23->23->23-> 0-> 0->23->X
+  EXPECT_EQ('X', m0.ToLamp(*Key::Create('A')).Value());
 
-  EXPECT_EQ('A', m_.ToLamp(*Key::Create('X')).Value());
-  EXPECT_EQ('A', m_.ToLamp(*Key::Create('X')).Value());
-  EXPECT_EQ('B', m_.ToLamp(*Key::Create('W')).Value());
-  EXPECT_EQ("HELLOWORLD", m_.ToLamp("QTMMJBJGMU"));
+  //4: B-> 1-> 5-> 4-> 0-> 0-> 0->25->25->25-> 3-> 4-> 0->A
+  EXPECT_EQ('A', m0.ToLamp(*Key::Create('B')).Value());
+
+  EXPECT_EQ('Z', m1.ToLamp(*Key::Create('A')).Value());
+  EXPECT_EQ('A', m1.ToLamp(*Key::Create('X')).Value());
+  EXPECT_EQ('B', m1.ToLamp(*Key::Create('A')).Value());
+
+  EXPECT_EQ("UTQQNFNKQY", m2.ToLamp("HELLOWORLD"));
+  EXPECT_EQ("UQOQKFNKQV", m2.ToLamp("HELLOWORLD"));
+  EXPECT_EQ("HLJLLWORSH", m2.ToLamp("UQOQKFNKJU"));
+
+  EXPECT_EQ("HELLOWORLD", m3.ToLamp("UTQQNFNKQY"));
+  EXPECT_EQ("HELLOWORLD", m3.ToLamp("UQOQKFNKQV"));
+  EXPECT_EQ("UQOQKFNKJU", m3.ToLamp("HLJLLWORSH"));
+
 }
 
 TEST(TestMachine, TestSteckerBoard)
@@ -144,9 +155,9 @@ TEST(TestMachine, TestSteckerBoard)
       Connections::CreateIdentity(),
       Connections::CreateIdentity(),
       Connections::CreateIdentity()},
-    { WheelDescriptor{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelDescriptor{*WheelIndex::Create(2), *Key::Create('A')}},
+    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
+      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
     *SteckerBoard::Create({{*Key::Create('A'),*Key::Create('B')},
                            {*Key::Create('E'),*Key::Create('L')},
                            {*Key::Create('W'),*Key::Create('D')}})

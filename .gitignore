@@ -37,3 +37,4 @@ enigmaTest/x64
 enigmaTestGoogle/x64
 packages
 x64
+*.pptx

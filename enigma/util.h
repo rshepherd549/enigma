@@ -39,7 +39,7 @@ public:
   {
     return Value() == other.Value();
   }
-  IntRange Inc(int inc) const
+  [[nodiscard]] IntRange Inc(int inc) const
   {
     return static_cast<T>((value_ + inc + num_) % num_);
   };
