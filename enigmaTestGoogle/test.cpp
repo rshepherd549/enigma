@@ -42,7 +42,7 @@ TEST(TestMachine, IdentityWheels)
     { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *SteckerBoard::Create({})
+    *PlugBoard::Create({})
   };
   auto m_ = m;
 
@@ -72,7 +72,7 @@ TEST(TestMachine, AddOneWheels)
     { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *SteckerBoard::Create({})
+    *PlugBoard::Create({})
   };
   auto m_ = m;
 
@@ -102,7 +102,7 @@ TEST(TestMachine, ChangingWheels)
     { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *SteckerBoard::Create({})
+    *PlugBoard::Create({})
   };
   auto m1 = m0;
   auto m2 = m0;
@@ -137,15 +137,15 @@ TEST(TestMachine, ChangingWheels)
 
 }
 
-TEST(TestMachine, TestSteckerBoard)
+TEST(TestMachine, TestPlugBoard)
 {
-  EXPECT_TRUE( SteckerBoard::Create({{*Key::Create('A'),*Key::Create('B')},
-                                     {*Key::Create('E'),*Key::Create('L')},
-                                     {*Key::Create('W'),*Key::Create('D')}}));
+  EXPECT_TRUE( PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
+                                  {*Key::Create('E'),*Key::Create('L')},
+                                  {*Key::Create('W'),*Key::Create('D')}}));
 
-  EXPECT_FALSE(SteckerBoard::Create({{*Key::Create('A'),*Key::Create('B')},
-                                     {*Key::Create('A'),*Key::Create('L')},
-                                     {*Key::Create('W'),*Key::Create('D')}})) << "Should detect duplicate Keys";
+  EXPECT_FALSE(PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
+                                  {*Key::Create('A'),*Key::Create('L')},
+                                  {*Key::Create('W'),*Key::Create('D')}})) << "Should detect duplicate Keys";
 
   Machine m
   {
@@ -158,9 +158,9 @@ TEST(TestMachine, TestSteckerBoard)
     { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
       WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *SteckerBoard::Create({{*Key::Create('A'),*Key::Create('B')},
-                           {*Key::Create('E'),*Key::Create('L')},
-                           {*Key::Create('W'),*Key::Create('D')}})
+    *PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
+                        {*Key::Create('E'),*Key::Create('L')},
+                        {*Key::Create('W'),*Key::Create('D')}})
   };
   auto m_ = m;
 

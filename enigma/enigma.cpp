@@ -197,7 +197,7 @@ WheelSelection::WheelSelection(IntRange<unsigned char, 0, numMachineWheels> whee
 {
 }
 
-SteckerBoard::SteckerBoard(const CrossPluggings& crossPluggings)
+PlugBoard::PlugBoard(const CrossPluggings& crossPluggings)
 {
   for (char i = 0; i != c_numChars; ++i)
     crossPluggings_[i] = *Key::Create('A'+i);
@@ -208,7 +208,7 @@ SteckerBoard::SteckerBoard(const CrossPluggings& crossPluggings)
     crossPluggings_[crossPlugging.rhs.Value()-'A'] = crossPlugging.lhs;
   }
 }
-/*static*/ bool SteckerBoard::IsValid_(const CrossPluggings& crossPluggings)
+/*static*/ bool PlugBoard::IsValid_(const CrossPluggings& crossPluggings)
 {
   std::array<unsigned char, c_numChars> charsUsed{};
 
@@ -221,13 +221,13 @@ SteckerBoard::SteckerBoard(const CrossPluggings& crossPluggings)
   return !anyDuplicate;
 }
 
-/*static*/ std::optional<SteckerBoard> SteckerBoard::Create(const CrossPluggings& crossPluggings)
+/*static*/ std::optional<PlugBoard> PlugBoard::Create(const CrossPluggings& crossPluggings)
 {
   return IsValid_(crossPluggings)
-       ? SteckerBoard(crossPluggings)
-       : std::optional<SteckerBoard>{};
+       ? PlugBoard(crossPluggings)
+       : std::optional<PlugBoard>{};
 }
-Key SteckerBoard::Cross(Key key) const
+Key PlugBoard::Cross(Key key) const
 {
   return crossPluggings_[key.Value()-'A'];
 }
@@ -235,22 +235,22 @@ Key SteckerBoard::Cross(Key key) const
 Machine::Machine( CrossConnections crossConnections,
                   std::array<Connections,numMachineWheels> connectionss,
                   std::array<WheelSelection,numScramblerWheels> wheels,
-                  SteckerBoard steckerBoard)
+                  PlugBoard plugBoard)
 : connectionss_{std::move(connectionss)},
   scrambler_{std::move(crossConnections),
              {Wheel{connectionss_[wheels[0].wheelIndex.Value()], wheels[0].ringSetting},
               Wheel{connectionss_[wheels[1].wheelIndex.Value()], wheels[1].ringSetting},
               Wheel{connectionss_[wheels[2].wheelIndex.Value()], wheels[2].ringSetting}}},
-  steckerBoard_{std::move(steckerBoard)}
+  plugBoard_{std::move(plugBoard)}
 {
 }
 
 Lamp Machine::ToLamp(const Key key_)
 {
-  const auto key = steckerBoard_.Cross(key_);
+  const auto key = plugBoard_.Cross(key_);
   const auto lamp = scrambler_.ToLamp(key);
 
-  return steckerBoard_.Cross(lamp);
+  return plugBoard_.Cross(lamp);
 }
 
 std::string Machine::ToLamp(const std::string_view keys)

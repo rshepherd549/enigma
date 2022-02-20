@@ -140,26 +140,26 @@ struct CrossPlugging
   Key rhs;
 };
 using CrossPluggings = std::vector<CrossPlugging>;
-class SteckerBoard
+class PlugBoard
 {
   std::array<Key, c_numChars> crossPluggings_;
-  SteckerBoard(const CrossPluggings& crossPluggings);
+  PlugBoard(const CrossPluggings& crossPluggings);
   static bool IsValid_(const CrossPluggings& crossPluggings);
 public:
-  static std::optional<SteckerBoard> Create(const CrossPluggings& crossPluggings);
+  static std::optional<PlugBoard> Create(const CrossPluggings& crossPluggings);
   Key Cross(Key key) const;
 };
 class Machine
 {
   std::array<Connections,numMachineWheels> connectionss_;
   Scrambler scrambler_;
-  SteckerBoard steckerBoard_;
+  PlugBoard plugBoard_;
 
 public:
   Machine(CrossConnections crossConnections,
           std::array<Connections,numMachineWheels> connectionss,
           std::array<WheelSelection,numScramblerWheels> wheels,
-          SteckerBoard steckerBoard);
+          PlugBoard plugBoard);
   Lamp ToLamp(Key key);
   std::string ToLamp(const std::string_view keys);
 };

@@ -50,7 +50,7 @@ namespace enigmaTest
         { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
           WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
           WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-        *SteckerBoard::Create({})
+        *PlugBoard::Create({})
       };
       Assert::AreEqual('Z', m.ToLamp(*Key::Create('A')).Value());
       Assert::AreEqual('Z', m.ToLamp(*Key::Create('A')).Value());
