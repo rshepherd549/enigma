@@ -31,19 +31,32 @@ TEST(TestTextChar, Create)
 
 TEST(TestMachine, IdentityWheels)
 {
-  Machine m
+  auto crossConnections = CrossConnections::CreateReverse();
+  TurnAboutWheel turnAboutWheel{std::move(crossConnections)};
+
+  std::array<Wheel, numMachineWheels> wheels =
   {
-    CrossConnections::CreateReverse(),
-    { Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity()},
-    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *PlugBoard::Create({})
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
   };
+
+  Machine m {std::move(turnAboutWheel), std::move(wheels)};
+
+  std::array<WheelSelection, numScramblerRotors> wheelSelections =
+  {
+    WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
+    WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
+    WheelSelection{*WheelIndex::Create(2), *Key::Create('A')},
+  };
+
+  auto plugBoard = PlugBoard::Create({});
+  EXPECT_TRUE(plugBoard);
+
+  m.Configure(wheelSelections, *plugBoard);
+
   auto m_ = m;
 
   EXPECT_EQ('Z', m.ToLamp(*Key::Create('A')).Value());
@@ -59,21 +72,43 @@ TEST(TestMachine, IdentityWheels)
   EXPECT_EQ("HELLOWORLD", m_.ToLamp("SVOOLDLIOW"));
 }
 
-TEST(TestMachine, AddOneWheels)
+std::optional<Connections> CreateConnections(const std::array<unsigned char, c_numChars>& connectionIds)
 {
-  Machine m
+  std::array<LeftTerminal, c_numChars> terminals;
+
+  for (size_t terminal = 0; terminal != c_numChars; ++terminal)
   {
-    CrossConnections::CreateReverse(),
-    { *Connections::Create(std::array<unsigned char, c_numChars>{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25}),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity()},
-    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *PlugBoard::Create({})
+    const auto connection = Terminal::Create(connectionIds[terminal]);
+    if (!connection)
+      return {};
+    terminals[terminal] = LeftTerminal{*connection};
+  }
+
+  return Connections::Create(std::move(terminals));
+}
+
+TEST(TestMachine, RotateBy1Wheel)
+{
+  auto crossConnections = CrossConnections::CreateReverse();
+  TurnAboutWheel turnAboutWheel{std::move(crossConnections)};
+
+  const auto rotateBy1 = CreateConnections({1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,0});
+  if (!rotateBy1)
+    throw;
+
+  std::array<Wheel, numMachineWheels> wheels =
+  {
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{*rotateBy1},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
   };
+
+  Machine m {std::move(turnAboutWheel), std::move(wheels)};
+
+  //No configuration?
+
   auto m_ = m;
 
   EXPECT_EQ('X', m.ToLamp(*Key::Create('A')).Value());
@@ -91,19 +126,24 @@ TEST(TestMachine, AddOneWheels)
 
 TEST(TestMachine, ChangingWheels)
 {
-  Machine m0
+  auto crossConnections = CrossConnections::CreateReverse();
+  TurnAboutWheel turnAboutWheel{std::move(crossConnections)};
+
+  const auto interchange = CreateConnections({0, 2, 1, 5, 3, 4, 9, 6, 7, 8,15,10,11,12,13,14,22,16,17,18,19,20,21,25,23,24});
+  if (!interchange)
+    throw;
+
+  std::array<Wheel, numMachineWheels> wheels =
   {
-    CrossConnections::CreateReverse(),                         // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
-    { Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      *Connections::Create(std::array<unsigned char, c_numChars>{ 0, 2, 1, 5, 3, 4, 9, 6, 7, 8,15,10,11,12,13,14,22,16,17,18,19,20,21,25,23,24}),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity()},
-    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *PlugBoard::Create({})
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{*interchange},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
   };
+
+  Machine m0 {std::move(turnAboutWheel), std::move(wheels)};
+
   auto m1 = m0;
   auto m2 = m0;
   auto m3 = m0;
@@ -139,29 +179,38 @@ TEST(TestMachine, ChangingWheels)
 
 TEST(TestMachine, TestPlugBoard)
 {
-  EXPECT_TRUE( PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
-                                  {*Key::Create('E'),*Key::Create('L')},
-                                  {*Key::Create('W'),*Key::Create('D')}}));
+  auto crossConnections = CrossConnections::CreateReverse();
+  TurnAboutWheel turnAboutWheel{std::move(crossConnections)};
+
+  std::array<Wheel, numMachineWheels> wheels =
+  {
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+    Wheel{Connections::Create()},
+  };
+
+  Machine m {std::move(turnAboutWheel), std::move(wheels)};
+
+  std::array<WheelSelection, numScramblerRotors> wheelSelections =
+  {
+    WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
+    WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
+    WheelSelection{*WheelIndex::Create(2), *Key::Create('A')},
+  };
 
   EXPECT_FALSE(PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
                                   {*Key::Create('A'),*Key::Create('L')},
                                   {*Key::Create('W'),*Key::Create('D')}})) << "Should detect duplicate Keys";
 
-  Machine m
-  {
-    CrossConnections::CreateReverse(),
-    { Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity(),
-      Connections::CreateIdentity()},
-    { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
-      WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},
-    *PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
-                        {*Key::Create('E'),*Key::Create('L')},
-                        {*Key::Create('W'),*Key::Create('D')}})
-  };
+  auto plugBoard = PlugBoard::Create({{*Key::Create('A'),*Key::Create('B')},
+                                      {*Key::Create('E'),*Key::Create('L')},
+                                      {*Key::Create('W'),*Key::Create('D')}});
+  EXPECT_TRUE(plugBoard);
+
+  m.Configure(wheelSelections, *plugBoard);
+
   auto m_ = m;
 
   EXPECT_EQ("SOVVEDEIVW", m.ToLamp("HELLOWORLD"));

@@ -42,11 +42,11 @@ namespace enigmaTest
       Machine m
       {
         CrossConnections::CreateReverse(),
-        { Connections::CreateIdentity(),
-          Connections::CreateIdentity(),
-          Connections::CreateIdentity(),
-          Connections::CreateIdentity(),
-          Connections::CreateIdentity()},
+        { Connections::Create(),
+          Connections::Create(),
+          Connections::Create(),
+          Connections::Create(),
+          Connections::Create()},
         { WheelSelection{*WheelIndex::Create(0), *Key::Create('A')},
           WheelSelection{*WheelIndex::Create(1), *Key::Create('A')},
           WheelSelection{*WheelIndex::Create(2), *Key::Create('A')}},

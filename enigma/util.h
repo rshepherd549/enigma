@@ -7,24 +7,27 @@ template <typename T, T begin_, size_t num_>
 class IntRange
 {
   T value_{begin_};
-  IntRange(T terminal): value_{terminal}
+  IntRange(T value): value_{value}
   {}
 public:
   using value_type = T;
   IntRange() = default;
-  static std::optional<IntRange> Create(T terminal)
+
+  template <typename TIn>
+  static std::optional<IntRange> Create(TIn value)
   {
-    return (terminal < begin_ || terminal >= begin_ + num_)
+    return (value < begin_ || value >= (begin_ + num_))
          ? std::optional<IntRange>{}
-         : IntRange{terminal};
+         : IntRange{static_cast<T>(value)};
   }
+
   static constexpr T begin()
   {
     return begin_;
   }
   static constexpr T end()
   {
-    return static_cast<T>(begin_+num_);
+    return static_cast<T>(begin_ + num_);
   }
   static constexpr size_t num()
   {
@@ -35,11 +38,15 @@ public:
   {
     return value_;
   }
+  size_t Index() const
+  {
+    return static_cast<size_t>(value_ - begin_);
+  }
   bool operator==(const IntRange& other) const
   {
     return Value() == other.Value();
   }
-  [[nodiscard]] IntRange Inc(int inc) const
+  [[nodiscard]] IntRange operator+(int inc) const
   {
     return static_cast<T>((value_ + inc + num_) % num_);
   };

@@ -7,6 +7,15 @@
 
 #include "util.h"
 
+static constexpr size_t c_numChars = 26;
+static_assert(c_numChars % 2 == 0); //Check even
+static constexpr size_t c_numCharsBy2 = c_numChars/2;
+
+using TextChar = IntRange<char, 'A', c_numChars>;
+using Key = TextChar;
+using Lamp = TextChar;
+using EncipheredText = std::vector<TextChar>;
+
 using FrequencyHertz = float;
 using Time = size_t;
 
@@ -16,42 +25,20 @@ struct Interception
   Time time{0};
 };
 
-using Callsign = std::array<char, 3>;
-using Discriminant = std::array<char, 3>;
-using IndicatorSetting = std::array<char, 3>;
+using Callsign = std::array<TextChar, 3>;
+using Discriminant = std::array<TextChar, 3>;
+using IndicatorSetting = std::array<TextChar, 3>;
 
 struct Preamble
 {
-  Callsign from = {0,0,0}; //Sending station
+  Callsign from{}; //Sending station
   std::vector<Callsign> to; //Destination stations
   Time timeOfOrigin{0};
   size_t part{0};
   size_t numParts{0};
-  Discriminant discriminant = {0,0,0}; //Distinguish between different types of Enimga traffic. It indicates which of many current keys was being used
-  IndicatorSetting indicatorSetting = {0,0,0}; //Used for encoding and decoding
+  Discriminant discriminant{}; //Distinguish between different types of Enimga traffic. It indicates which of many current keys was being used
+  IndicatorSetting indicatorSetting{}; //Used for encoding and decoding
 };
-
-static constexpr size_t c_numChars = 26;
-
-using Terminal = IntRange<unsigned char, 0, c_numChars>;
-
-struct LeftTerminal
-{
-  Terminal terminal;
-  LeftTerminal Inc(int inc) const;
-};
-bool operator==(const LeftTerminal& left1, const LeftTerminal& left2);
-
-struct RightTerminal
-{
-  Terminal terminal;
-  RightTerminal Inc(int inc) const;
-};
-
-using TextChar = IntRange<char, 'A', c_numChars>;
-using Key = TextChar;
-using Lamp = TextChar;
-using EncipheredText = std::vector<TextChar>;
 
 struct EnigmaMessage
 {
@@ -60,39 +47,75 @@ struct EnigmaMessage
   EncipheredText encipheredText;
 };
 
+using Terminal = IntRange<unsigned char, 0, c_numChars>;
+
+struct LeftTerminal
+{
+  Terminal terminal;
+  LeftTerminal operator+(int inc) const;
+  LeftTerminal operator-(int inc) const;
+};
+bool operator==(const LeftTerminal& left1, const LeftTerminal& left2);
+
+struct RightTerminal
+{
+  Terminal terminal;
+  RightTerminal operator+(int inc) const;
+  RightTerminal operator-(int inc) const;
+};
+
 class Connections
 {
 protected:
   std::array<LeftTerminal, c_numChars> rightToLeft_;
   Connections(std::array<LeftTerminal, c_numChars> rightToLeft);
 public:
-  static std::optional<Connections> Create(std::array<LeftTerminal, c_numChars> rightToLeft);
-  static std::optional<Connections> Create(std::array<unsigned char, c_numChars> rightToLeft);
-  static Connections CreateIdentity();
+  static std::optional<Connections> Create(std::array<LeftTerminal, c_numChars> rightToLefts);
+  static Connections Create();
 
   LeftTerminal ToLeft(RightTerminal right) const;
   RightTerminal ToRight(LeftTerminal left) const;
 };
 
+class CrossConnection
+{
+  LeftTerminal from_;
+  LeftTerminal to_;
+  CrossConnection(LeftTerminal from, LeftTerminal to);
+public:
+  CrossConnection();
+  static std::optional<CrossConnection> Create(LeftTerminal from, LeftTerminal to);
+  LeftTerminal From() const;
+  LeftTerminal To() const;
+};
+
 class CrossConnections: public Connections
 {
-  CrossConnections(std::array<LeftTerminal, c_numChars> connections);
+  CrossConnections(Connections connections);
 public:
-  static std::optional<CrossConnections> Create(std::array<LeftTerminal, c_numChars> connections);
+  static std::optional<CrossConnections> Create(std::array<CrossConnection, c_numChars/2> crossConnections);
   static CrossConnections CreateReverse();
 
-  LeftTerminal TurnAround(LeftTerminal left) const;
+  LeftTerminal Transform(LeftTerminal left) const;
 };
 
 class Wheel
 {
   const Connections& connections_;
-  Key ringSetting_;
+public:
+  Wheel(const Connections& connections);
+  LeftTerminal ToLeft(RightTerminal right) const;
+  RightTerminal ToRight(LeftTerminal left) const;
+};
+
+class Rotor
+{
+  std::reference_wrapper<const Wheel> wheel_;
   size_t rotation_{0};
 
   size_t TotalRotation_() const;
 public:
-  Wheel(const Connections& connections, Key ringSetting);
+  Rotor(const Wheel& wheel, Key ringSetting);
   LeftTerminal ToLeft(RightTerminal right) const;
   RightTerminal ToRight(LeftTerminal left) const;
   size_t Inc(size_t inc);
@@ -103,7 +126,7 @@ class TurnAboutWheel
   CrossConnections crossConnections_;
 public:
   TurnAboutWheel(CrossConnections crossConnections);
-  LeftTerminal TurnAround(LeftTerminal in) const;
+  LeftTerminal Transform(LeftTerminal in) const;
 };
 
 class Commutator
@@ -113,53 +136,56 @@ public:
   Lamp ToLamp(LeftTerminal left) const;
 };
 
-constexpr size_t numScramblerWheels = 3;
-class Scrambler
-{
-  TurnAboutWheel turnAroundWheel_;
-  std::array<Wheel,numScramblerWheels> wheels_; //left to right
-  Commutator commutator_;
-public:
-  Scrambler(CrossConnections crossConnections,
-            std::array<Wheel,numScramblerWheels> wheels);
-  Lamp ToLamp(Key in);
-};
-
 constexpr size_t numMachineWheels = 5;
+constexpr size_t numScramblerRotors = 3;
+
 using WheelIndex = IntRange<unsigned char, 0, numMachineWheels>;
 struct WheelSelection
 {
   WheelIndex wheelIndex;
   Key ringSetting;
-  WheelSelection(IntRange<unsigned char, 0, numMachineWheels> wheelIndex,
+  WheelSelection(WheelIndex wheelIndex,
                  Key ringSetting);
 };
-struct CrossPlugging
+
+class Scrambler
+{
+  TurnAboutWheel turnAroundWheel_;
+  std::array<Rotor, numScramblerRotors> rotors_; //left to right
+  Commutator commutator_;
+public:
+  Scrambler(TurnAboutWheel turnAroundWheel,
+            const std::array<Wheel,numMachineWheels>& wheels);
+  void Configure(const std::array<Wheel,numMachineWheels>& wheels,
+                 std::array<WheelSelection,numScramblerRotors> selections);
+  Lamp ToLamp(Key in);
+};
+
+struct Plug
 {
   Key lhs;
   Key rhs;
 };
-using CrossPluggings = std::vector<CrossPlugging>;
+using Plugs = std::vector<Plug>;
 class PlugBoard
 {
-  std::array<Key, c_numChars> crossPluggings_;
-  PlugBoard(const CrossPluggings& crossPluggings);
-  static bool IsValid_(const CrossPluggings& crossPluggings);
+  Connections connections_;
+  PlugBoard(Connections connections);
 public:
-  static std::optional<PlugBoard> Create(const CrossPluggings& crossPluggings);
-  Key Cross(Key key) const;
+  static std::optional<PlugBoard> Create(const Plugs& plugs);
+  Key Transform(Key key) const;
 };
 class Machine
 {
-  std::array<Connections,numMachineWheels> connectionss_;
+  std::array<Wheel,numMachineWheels> wheels_;
   Scrambler scrambler_;
   PlugBoard plugBoard_;
 
 public:
-  Machine(CrossConnections crossConnections,
-          std::array<Connections,numMachineWheels> connectionss,
-          std::array<WheelSelection,numScramblerWheels> wheels,
-          PlugBoard plugBoard);
+  Machine(TurnAboutWheel turnAboutWheel,
+          std::array<Wheel, numMachineWheels> wheels);
+  void Configure(std::array<WheelSelection, numScramblerRotors> selections,
+                 PlugBoard plugBoard);
   Lamp ToLamp(Key key);
   std::string ToLamp(const std::string_view keys);
 };
